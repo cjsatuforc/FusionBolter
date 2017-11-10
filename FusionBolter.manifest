@@ -1,0 +1,13 @@
+{
+	"autodeskProduct":	"Fusion360",
+	"type":	"addin",
+	"id":	"f983f385-1dd1-4196-a78a-fb850fce9b0c",
+	"author":	"Patrick Rainsberry",
+	"description":	{
+		"":	"Calculates bolt holes\t\t\t\t\t"
+	},
+	"version":	"1.0",
+	"runOnStartup":	false,
+	"supportedOS":	"windows|mac",
+	"editEnabled":	true
+}

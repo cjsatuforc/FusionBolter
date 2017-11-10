@@ -1,0 +1,9 @@
+type,description,file,model,sheet_number
+Washer,SAE Washer R,Hardware_Sizes - SAE_Washer_R.csv,SAE_Washer.f3d,5
+Washer,SAE Washer N,Hardware_Sizes - SAE_Washer_N.csv,SAE_Washer.f3d,4
+Washer,SAE Washer W,Hardware_Sizes - SAE_Washer_W.csv,SAE_Washer.f3d,3
+Nut,Hex Nut - US,Hardware_Sizes - Hex_Nut.csv,HEX_Nut.f3d,7
+Bolt,Socket Head Cap Screw,Hardware_Sizes - Socket_Head_Cap.csv,Cap_Screw.f3d,6
+Nut,Hex Nut - US2,Hardware_Sizes - Hex_Nut.csv,HEX_Nut.f3d,7
+Bolt,Socket Head Cap Screw2,Hardware_Sizes - Socket_Head_Cap.csv,Cap_Screw.f3d,6
+Bolt,Hex Bolt,Hardware_Sizes - Hex_Bolt.csv,HEX_Bolt.f3d,8
