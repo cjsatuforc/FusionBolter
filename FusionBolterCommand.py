@@ -23,10 +23,6 @@ Hole_Pair = namedtuple('Hole_Pair', ('top_hole', 'bottom_hole', 'length'))
 Hardware_Item = namedtuple('Hardware_Item', ('type', 'description', 'model'))
 joint_check = []
 
-MASTER_FILE = 'Hardware_Sizes - Master.csv'
-
-ONLINE = True
-
 
 # Get default directory
 def get_default_model_dir():
