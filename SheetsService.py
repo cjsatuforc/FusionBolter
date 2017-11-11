@@ -5,8 +5,8 @@ import sys
 # If modifying these scopes, delete your previously saved credentials
 # at ~/.credentials/sheets.googleapis.com-python-quickstart.json
 SCOPES = 'https://www.googleapis.com/auth/spreadsheets'
-CLIENT_SECRET_FILE = 'client_secret.json'
-# CLIENT_SECRET_FILE = csv_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'client_secret.json')
+# CLIENT_SECRET_FILE = 'client_secret.json'
+CLIENT_SECRET_FILE = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'client_secret.json')
 APPLICATION_NAME = 'FusionPlugin'
 
 
@@ -47,7 +47,7 @@ def get_credentials():
         Credentials, the obtained credential.
     """
     home_dir = os.path.expanduser('~')
-    credential_dir = os.path.join(home_dir, '.credentials')
+    credential_dir = os.path.join(home_dir, 'FusionBolter', '.credentials')
     if not os.path.exists(credential_dir):
         os.makedirs(credential_dir)
     credential_path = os.path.join(credential_dir,
