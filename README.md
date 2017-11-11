@@ -5,7 +5,7 @@ A Fusion 360 Addin to create and manage bolted connections and hardware
 
 This sample is provided "As-is" with no guarantee of performance, reliability or warranty.
 
-![FusionBolter](./resources/readMeCover.png)
+![FusionBolter](./resources/readMeCover2.png)
 
 
 # Installation
