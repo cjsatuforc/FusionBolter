@@ -17,6 +17,8 @@ After downloading the zip file follow the [installation instructions here](https
 # Usage
 Instructions Coming Soon
 
+See a video here: https://youtu.be/k9R1rYNuVgw
+
 
 ## License
 Samples are licensed under the terms of the [MIT License](http://opensource.org/licenses/MIT). Please see the [LICENSE](LICENSE) file for full details.
