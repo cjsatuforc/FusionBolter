@@ -11,6 +11,7 @@ import json
 from urllib import request, error
 
 from .Fusion360Utilities.Fusion360Utilities import get_app_objects
+from .Fusion360Utilities import Fusion360Utilities as futil
 from .Fusion360Utilities.Fusion360CommandBase import Fusion360CommandBase
 from .Fusion360Utilities.Fusion360DebugUtilities import perf_log, perf_message
 
@@ -250,21 +251,58 @@ def group_length_results(hole_pairs):
     return hole_map
 
 
-def find_pairs(top_holes, bottom_holes):
+def find_pairs(top_holes, bottom_holes, bolt_max):
     hole_pairs = []
 
     for top_hole in top_holes:
 
+        match = None
+
         for bottom_hole in bottom_holes:
+
             distance = distance_point_to_line(top_hole.edge.geometry.center,
                                               bottom_hole.cylinderFace.geometry.origin,
                                               bottom_hole.cylinderFace.geometry.axis)
             if distance < .0001:
-                length = top_hole.edge.geometry.center.distanceTo(bottom_hole.edge.geometry.center)
-                hole_pairs.append(Hole_Pair(top_hole, bottom_hole, length))
-                break
 
-    return hole_pairs
+                length = top_hole.edge.geometry.center.distanceTo(bottom_hole.edge.geometry.center)
+
+                if length <= bolt_max:
+
+                    if match is not None:
+
+                        if length > match.length:
+                            match = Hole_Pair(top_hole, bottom_hole, length)
+
+                    else:
+                        match = Hole_Pair(top_hole, bottom_hole, length)
+
+        if match is not None:
+            hole_pairs.append(match)
+
+    excludes = []
+
+    for i, pair in enumerate(hole_pairs):
+
+        for j in range(i+1, len(hole_pairs)):
+
+            distance = distance_point_to_line(pair.top_hole.edge.geometry.center,
+                                              hole_pairs[j].top_hole.cylinderFace.geometry.origin,
+                                              hole_pairs[j].top_hole.cylinderFace.geometry.axis)
+            if distance < .0001:
+
+                if pair.top_hole.edge.geometry.center.distanceTo(hole_pairs[j].top_hole.edge.geometry.center) <= bolt_max:
+
+                    if pair.length > hole_pairs[j].length:
+                        excludes.append(j)
+
+                    else:
+                        excludes.append(i)
+
+    # get_app_objects()['ui'].messageBox(str(excludes))
+    new_hole_pairs = [o for i, o in enumerate(hole_pairs) if i not in excludes]
+
+    return new_hole_pairs
 
 
 # Opens the correct model
@@ -435,10 +473,10 @@ def get_tagged_face(occ: adsk.fusion.Occurrence, tag_name: str) -> adsk.fusion.J
 def joint_to_hole(target_comp: adsk.fusion.Component, joint_face, hole):
     design = target_comp.parentDesign
 
-    (top_target_edge, top_translation_matrix, top_radius, top_cylinder_face, top_hole_face) = hole
+    (hole_edge, top_translation_matrix, top_radius, cylinder_face, hole_face) = hole
 
-    cyl = top_cylinder_face.geometry
-    test_dist = cyl.origin.distanceTo(top_target_edge.geometry.center)
+    cyl = cylinder_face.geometry
+    test_dist = cyl.origin.distanceTo(hole_edge.geometry.center)
 
     if test_dist < .0001:
         key_point = adsk.fusion.JointKeyPointTypes.EndKeyPoint
@@ -448,17 +486,30 @@ def joint_to_hole(target_comp: adsk.fusion.Component, joint_face, hole):
         key_point = adsk.fusion.JointKeyPointTypes.StartKeyPoint
         # ui.messageBox('Top = Start Point')
 
-    top_hole_joint_geo = adsk.fusion.JointGeometry.createByNonPlanarFace(top_cylinder_face, key_point)
+    hole_joint_geo = adsk.fusion.JointGeometry.createByNonPlanarFace(cylinder_face, key_point)
 
-    joint_input = target_comp.joints.createInput(joint_face, top_hole_joint_geo)
+    joint_test_distance = hole_joint_geo.origin.distanceTo(hole_edge.geometry.center)
+
+    if joint_test_distance > .0001:
+
+        if hole_joint_geo.keyPointType == adsk.fusion.JointKeyPointTypes.StartKeyPoint:
+
+            key_point = adsk.fusion.JointKeyPointTypes.EndKeyPoint
+
+        else:
+            key_point = adsk.fusion.JointKeyPointTypes.StartKeyPoint
+        hole_joint_geo = adsk.fusion.JointGeometry.createByNonPlanarFace(cylinder_face, key_point)
+
+    joint_input = target_comp.joints.createInput(joint_face, hole_joint_geo)
 
     top_joint = target_comp.joints.add(joint_input)
 
-    top_hole_face = adsk.fusion.BRepFace.cast(top_hole_face)
+    hole_face = adsk.fusion.BRepFace.cast(hole_face)
 
-    test, top_hole_face_normal = top_hole_face.evaluator.getNormalAtPoint(top_hole_face.pointOnFace)
+    test, top_hole_face_normal = hole_face.evaluator.getNormalAtPoint(hole_face.pointOnFace)
 
     top_washer_face = joint_face.entityOne
+
     test, top_washer_normal = top_washer_face.evaluator.getNormalAtPoint(top_washer_face.pointOnFace)
 
     face_angle = top_hole_face_normal.angleTo(top_washer_normal)
@@ -495,6 +546,8 @@ def place_components3(spreadsheet_id, target_comp: adsk.fusion.Component, hole_m
     log = []
 
     perf_log(log, 'place components', 'start', '')
+
+    empty_translation = adsk.core.Matrix3D.create()
 
     # TODO want to do a perf log on this
     for size, hole_pairs in hole_map.items():
@@ -550,6 +603,7 @@ def place_components3(spreadsheet_id, target_comp: adsk.fusion.Component, hole_m
                 perf_log(log, 'place components', 'place_comp2', 'Bolt')
             else:
                 bolt_occ = place_existing_component(target_comp, top_translation_matrix, bolt_comp)
+                # bolt_occ = place_existing_component(target_comp, empty_translation, bolt_comp)
                 perf_log(log, 'place components', 'place_existing', 'Bolt' + str(perf_count))
 
             if washer_comp_top is None:
@@ -558,6 +612,7 @@ def place_components3(spreadsheet_id, target_comp: adsk.fusion.Component, hole_m
                 perf_log(log, 'place components', 'place_comp2', 'Washer1')
             else:
                 washer_occ_top = place_existing_component(target_comp, top_translation_matrix, washer_comp_top)
+                # washer_occ_top = place_existing_component(target_comp, empty_translation, washer_comp_top)
                 perf_log(log, 'place components', 'place_existing', 'Washer1' + str(perf_count))
 
             if washer_comp_bottom is None:
@@ -566,7 +621,8 @@ def place_components3(spreadsheet_id, target_comp: adsk.fusion.Component, hole_m
                 perf_log(log, 'place components', 'place_comp2', 'Washer2')
 
             else:
-                washer_occ_bottom = place_existing_component(target_comp, bottom_translation_matrix, washer_comp_bottom)
+                washer_occ_bottom = place_existing_component(target_comp, top_translation_matrix, washer_comp_bottom)
+                # washer_occ_bottom = place_existing_component(target_comp, empty_translation, washer_comp_bottom)
                 perf_log(log, 'place components', 'place_existing', 'Washer2' + str(perf_count))
 
             if nut_comp is None:
@@ -575,6 +631,7 @@ def place_components3(spreadsheet_id, target_comp: adsk.fusion.Component, hole_m
                 perf_log(log, 'place components', 'place_comp2', 'Nut')
             else:
                 nut_occ = place_existing_component(target_comp, top_translation_matrix, nut_comp)
+                # nut_occ = place_existing_component(target_comp, empty_translation, nut_comp)
                 perf_log(log, 'place components', 'place_existing', 'Nut' + str(perf_count))
 
             # Get Joint Geometry for bolt
@@ -616,29 +673,27 @@ def place_components3(spreadsheet_id, target_comp: adsk.fusion.Component, hole_m
     # perf_message(log)
 
 
+def bom_message(hole_map):
+    app_objects = get_app_objects()
+    ui = app_objects['ui']
+
+    message_string = ''
+
+    for key, holes in hole_map.items():
+        message_string += key
+        message_string += '    \t'
+        message_string += 'Quantity:  ' + str(len(holes))
+        message_string += '\n'
+
+    ui.messageBox(message_string)
+
+
 class FusionBolterCommand(Fusion360CommandBase):
 
     def __init__(self, cmd_def, debug):
         super().__init__(cmd_def, debug)
         self.hardware_list = {}
 
-    # Run whenever a user makes any change to a value or selection in the addin UI
-    # Commands in here will be run through the Fusion processor and changes will be reflected in  Fusion graphics area
-    def on_preview(self, command, inputs, args, input_values):
-        pass
-
-    # Run after the command is finished.
-    # Can be used to launch another command automatically or do other clean up.
-    def on_destroy(self, command, inputs, reason, input_values):
-        pass
-
-    # Run when any input is changed.
-    # Can be used to check a value and then update the add-in UI accordingly
-    def on_input_changed(self, command_, command_inputs, changed_input, input_values):
-        pass
-
-    # Run when the user presses OK
-    # This is typically where your main program logic would go
     def on_execute(self, command, inputs, args, input_values):
         # Get a reference to all relevant application objects in a dictionary
         app_objects = get_app_objects()
@@ -665,37 +720,17 @@ class FusionBolterCommand(Fusion360CommandBase):
             if input_values['Nut'] == item.description:
                 nut_hardware = item
 
-        # TODO left off here next pass hardware to place components to select proper bolt
-
-        hole_pairs = find_pairs(top_holes, bottom_holes)
-
-        # hole_map = group_results(top_holes)
-
-        # message_sring = ''
-        # for diameter, hole in hole_map.items():
-        #     message_sring += 'Diameter:  ' + diameter
-        #     message_sring += '    \t'
-        #     message_sring += 'Quantity:  ' + str(len(hole))
-        #     message_sring += '\n'
-        #
-        # ui.messageBox(message_sring)
+        hole_pairs = find_pairs(top_holes, bottom_holes, input_values['bolt_max'])
 
         hole_map = group_length_results(hole_pairs)
-        message_sring = ''
-        for key, holes in hole_map.items():
-            message_sring += key
-            message_sring += '    \t'
-            message_sring += 'Quantity:  ' + str(len(holes))
-            message_sring += '\n'
 
-        place_components3(spreadsheet_id, root_comp, hole_map, input_values['bolt_extension'], bolt_hardware, washer_hardware,
-                          nut_hardware)
+        # start_index = futil.start_group()
 
-        ui.messageBox(message_sring)
+        place_components3(spreadsheet_id, root_comp, hole_map, input_values['bolt_extension'],
+                          bolt_hardware, washer_hardware, nut_hardware)
 
-    # Run when the user selects your command icon from the Fusion 360 UI
-    # Typically used to create and display a command dialog box
-    # The following is a basic sample of a dialog UI
+        # futil.end_group(start_index)
+
     def on_create(self, command, command_inputs):
 
         # TODO pull sheets once, put in self.
@@ -735,31 +770,24 @@ class FusionBolterCommand(Fusion360CommandBase):
         for item in self.hardware_list['Nut']:
             nut_drop_down.listItems.add(item.description, False)
 
+        command_inputs.addValueInput('bolt_max', 'Bolt Max Length', default_units,
+                                     adsk.core.ValueInput.createByString('3 in'))
+
 
 class FusionBolterFindCommand(Fusion360CommandBase):
 
     def on_execute(self, command, inputs, args, input_values):
-        # Get a reference to all relevant application objects in a dictionary
-        app_objects = get_app_objects()
-        ui = app_objects['ui']
-
 
         # Get the hole edges in the body.
         top_holes = find_hole_edges(input_values['top_hole_faces'])
 
         bottom_holes = find_hole_edges(input_values['bottom_hole_faces'])
 
-        hole_pairs = find_pairs(top_holes, bottom_holes)
+        hole_pairs = find_pairs(top_holes, bottom_holes, input_values['bolt_max'])
 
         hole_map = group_length_results(hole_pairs)
-        message_sring = ''
-        for key, holes in hole_map.items():
-            message_sring += key
-            message_sring += '    \t'
-            message_sring += 'Quantity:  ' + str(len(holes))
-            message_sring += '\n'
 
-        ui.messageBox(message_sring)
+        bom_message(hole_map)
 
     def on_create(self, command, command_inputs):
 
@@ -777,5 +805,8 @@ class FusionBolterFindCommand(Fusion360CommandBase):
                                                            'Hole top faces')
         bot_faces_input.addSelectionFilter('SolidFaces')
         bot_faces_input.setSelectionLimits(1, 0)
+
+        command_inputs.addValueInput('bolt_max', 'Bolt Max Length', default_units,
+                                     adsk.core.ValueInput.createByString('3 in'))
 
 
