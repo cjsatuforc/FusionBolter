@@ -9,7 +9,7 @@ This sample is provided "As-is" with no guarantee of performance, reliability or
 
 
 # Installation
-[Click here to download the Add-in](https://github.com/tapnair/FusionSlicerLT/archive/master.zip)
+[Click here to download the Add-in](https://github.com/tapnair/FusionBolter/archive/master.zip)
 
 After downloading the zip file follow the [installation instructions here](https://tapnair.github.io/installation.html) for your particular OS version of Fusion 360
 
