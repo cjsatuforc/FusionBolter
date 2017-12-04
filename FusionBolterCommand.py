@@ -685,6 +685,9 @@ def bom_message(hole_map):
         message_string += 'Quantity:  ' + str(len(holes))
         message_string += '\n'
 
+    if len(message_string) == 0:
+        message_string = 'No matching holes where found'
+
     ui.messageBox(message_string)
 
 
