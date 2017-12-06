@@ -95,7 +95,6 @@ def sheets_to_dict(spreadsheet_id, sheet_number):
 
 
 def get_parts_from_sheets2(spreadsheet_id):
-
     # Todo from config file
     range_name = 'Master'
 
@@ -120,7 +119,6 @@ def get_parts_from_sheets2(spreadsheet_id):
 
 # Returns list of Dict's for each row after header row
 def sheet_range_to_dict2(spreadsheet_id, range_name):
-
     result = sheets_get_range(spreadsheet_id, range_name)
 
     rows = result.get('values', [])
@@ -136,7 +134,6 @@ def sheet_range_to_dict2(spreadsheet_id, range_name):
 
 # Returns list of Dict's for each row after header row
 def sheet_ranges_to_dict2(value_ranges, range_index):
-
     rows = value_ranges[range_index].get('values', [])
 
     dict_list = []
@@ -243,7 +240,9 @@ def group_length_results(hole_pairs):
     for hole in hole_pairs:
         diameter_value = round(units_manager.convert(hole.top_hole.radius * 2, 'cm',
                                                      units_manager.defaultLengthUnits), 5)
-        length_value = ao['units_manager'].formatInternalValue(hole.length, "DefaultDistance", False)
+        # length_value = ao['units_manager'].formatInternalValue(hole.length, "DefaultDistance", False)
+        length_value = round(units_manager.convert(hole.length, 'cm',
+                                                   units_manager.defaultLengthUnits), 5)
 
         key_string = str(diameter_value) + ' X ' + str(length_value)
         hole_map[key_string].append(hole)
@@ -284,14 +283,15 @@ def find_pairs(top_holes, bottom_holes, bolt_max):
 
     for i, pair in enumerate(hole_pairs):
 
-        for j in range(i+1, len(hole_pairs)):
+        for j in range(i + 1, len(hole_pairs)):
 
             distance = distance_point_to_line(pair.top_hole.edge.geometry.center,
                                               hole_pairs[j].top_hole.cylinderFace.geometry.origin,
                                               hole_pairs[j].top_hole.cylinderFace.geometry.axis)
             if distance < .0001:
 
-                if pair.top_hole.edge.geometry.center.distanceTo(hole_pairs[j].top_hole.edge.geometry.center) <= bolt_max:
+                if pair.top_hole.edge.geometry.center.distanceTo(
+                        hole_pairs[j].top_hole.edge.geometry.center) <= bolt_max:
 
                     if pair.length > hole_pairs[j].length:
                         excludes.append(j)
@@ -325,7 +325,6 @@ def open_model(model_name: str, target_comp: adsk.fusion.Component) -> adsk.fusi
 
 
 def get_size_from_sheet(radius, spreadsheet_id, sheet_number):
-
     # Get a reference to all relevant application objects in a dictionary
     app_objects = get_app_objects()
     um = app_objects['units_manager']
@@ -465,7 +464,6 @@ def get_tagged_face(occ: adsk.fusion.Occurrence, tag_name: str) -> adsk.fusion.J
             joint_geometry = adsk.fusion.JointGeometry.createByPlanarFace(target_face, None,
                                                                           adsk.fusion.JointKeyPointTypes.CenterKeyPoint)
             return joint_geometry
-
 
     return None
 
@@ -670,7 +668,7 @@ def place_components3(spreadsheet_id, target_comp: adsk.fusion.Component, hole_m
 
             perf_count += 1
 
-    # perf_message(log)
+            # perf_message(log)
 
 
 def bom_message(hole_map):
@@ -692,7 +690,6 @@ def bom_message(hole_map):
 
 
 class FusionBolterCommand(Fusion360CommandBase):
-
     def __init__(self, cmd_def, debug):
         super().__init__(cmd_def, debug)
         self.hardware_list = {}
@@ -778,9 +775,7 @@ class FusionBolterCommand(Fusion360CommandBase):
 
 
 class FusionBolterFindCommand(Fusion360CommandBase):
-
     def on_execute(self, command, inputs, args, input_values):
-
         # Get the hole edges in the body.
         top_holes = find_hole_edges(input_values['top_hole_faces'])
 
@@ -793,7 +788,6 @@ class FusionBolterFindCommand(Fusion360CommandBase):
         bom_message(hole_map)
 
     def on_create(self, command, command_inputs):
-
         # TODO pull sheets once, put in self.
         # Gets necessary application objects
         app_objects = get_app_objects()
@@ -811,5 +805,3 @@ class FusionBolterFindCommand(Fusion360CommandBase):
 
         command_inputs.addValueInput('bolt_max', 'Bolt Max Length', default_units,
                                      adsk.core.ValueInput.createByString('3 in'))
-
-
