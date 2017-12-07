@@ -315,6 +315,7 @@ def open_model(model_name: str, target_comp: adsk.fusion.Component) -> adsk.fusi
     # import_file_name = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'models', model_name)
     import_file_name = os.path.join(get_default_model_dir(), model_name)
 
+    # ao['ui'].messageBox(import_file_name)
     archive_options = import_manager.createFusionArchiveImportOptions(import_file_name)
 
     # Import f3d file to component
