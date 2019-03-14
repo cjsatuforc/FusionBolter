@@ -160,6 +160,8 @@ def sheets_copy_spreadsheet(spreadsheet_id):
 
     result = service.spreadsheets().get(spreadsheetId=spreadsheet_id, includeGridData=True).execute()
 
+    del result["spreadsheetId"]
+
     new_result = service.spreadsheets().create(body=result).execute()
 
     return new_result

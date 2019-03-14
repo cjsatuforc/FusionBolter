@@ -9,6 +9,9 @@ from .SheetsService import sheets_copy_spreadsheet
 
 from .BolterUtilities import write_settings, read_settings, get_default_model_dir
 
+# default_source_sheet_id = '1csJofpAG3oD204rxkVoYzI5WGjvrMeWsaq2oe2J7hig'
+default_source_sheet_id = '1HgvACfX5B7QFzvgQC0Z76pPZ6jCNw8hxVzgbDc0AkCA'
+
 
 # Copy sample files to configuration directory
 def copy_files():
@@ -28,7 +31,7 @@ class FusionBolterConfigCommand(Fusion360CommandBase):
     def on_execute(self, command, inputs, args, input_values):
 
         if input_values['new_or_existing'] == 'Create New Sheet':
-            spreadsheet = sheets_copy_spreadsheet('1csJofpAG3oD204rxkVoYzI5WGjvrMeWsaq2oe2J7hig')
+            spreadsheet = sheets_copy_spreadsheet(default_source_sheet_id)
             new_id = spreadsheet['spreadsheetId']
 
         elif input_values['new_or_existing'] == 'Link to Existing Sheet':
